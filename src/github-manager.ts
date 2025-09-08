@@ -144,7 +144,15 @@ export class GitHubManager {
   }
 
   async createDailyPR(date?: string): Promise<PRResult> {
-    const today = date || new Date().toISOString().split('T')[0];
+    // 한국 시간 기준 날짜
+    let today = date;
+    if (!date) {
+      const now = new Date();
+      const kstOffset = 9 * 60; // KST는 UTC+9
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kstTime = new Date(utcTime + (kstOffset * 60000));
+      today = kstTime.toISOString().split('T')[0];
+    }
     const branch = this.config.git.branch;
     const project = this.config.defaultProject || 'default';
     

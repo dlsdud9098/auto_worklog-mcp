@@ -44,8 +44,8 @@ GIT_ACCESS_TOKEN=ghp_your_personal_access_token
 # 작업 브랜치 설정 (필수)
 WORK_BRANCH=feature/my-work
 
-# 일일 노트 설정 (선택)
-USE_DAILY_NOTE=프로젝트 설명
+# 활성화할 Claude 프로젝트 (선택)
+USE_DAILY_NOTE=프로젝트1,프로젝트2  # 쉼표로 구분, 비어있으면 모든 프로젝트에서 활성화
 
 # Pull Request 자동화 (선택)
 AUTO_CREATE_PR=false
@@ -74,7 +74,7 @@ Claude Desktop의 설정 파일에 MCP 서버 추가:
         "GIT_USER_EMAIL": "your.email@example.com",
         "GIT_ACCESS_TOKEN": "your_github_personal_access_token",
         "WORK_BRANCH": "feature/my-work",
-        "USE_DAILY_NOTE": "프로젝트 설명",
+        "USE_DAILY_NOTE": "프로젝트1,프로젝트2",
         "AUTO_CREATE_PR": "true",
         "AUTO_MERGE_PR": "false",
         "PR_TARGET_BRANCH": "main",
@@ -95,6 +95,7 @@ Claude Desktop을 재시작한 후 다음 도구들을 사용할 수 있습니�
 /use saveConversation
 content: "대화 내용"
 summary: "간단한 요약"
+project: "프로젝트명"  # Claude 프로젝트명 (USE_DAILY_NOTE에 설정된 프로젝트만 저장 가능)
 createPR: true  # 선택사항, PR 생성 여부 (AUTO_CREATE_PR이 true면 자동 생성)
 ```
 
@@ -217,7 +218,7 @@ repository/
 - `WORK_BRANCH`: 작업 브랜치
 
 ### 선택 환경 변수
-- `USE_DAILY_NOTE`: 일일 노트 활성화 및 프로젝트 설명
+- `USE_DAILY_NOTE`: Auto worklog를 활성화할 Claude 프로젝트 목록 (쉼표 구분)
 - `AUTO_CREATE_PR`: 자동 PR 생성 (`true`/`false`)
 - `AUTO_MERGE_PR`: 자동 PR 병합 (`true`/`false`)
 - `PR_TARGET_BRANCH`: PR 대상 브랜치 (기본값: `main`)

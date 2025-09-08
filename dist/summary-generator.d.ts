@@ -8,6 +8,7 @@ export declare class SummaryGenerator {
     private fileManager;
     constructor(config: Config);
     private getYesterday;
+    private getKSTTimestamp;
     createSummary(date?: string, project?: string): Promise<SummaryResult>;
     createYesterdaySummary(project?: string): Promise<SummaryResult | null>;
     private generateSummaryContent;

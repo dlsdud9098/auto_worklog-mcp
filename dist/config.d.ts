@@ -13,7 +13,7 @@ export interface Config {
         summariesBase: string;
     };
     defaultProject?: string;
-    useDailyNote?: string;
+    enabledProjects?: string[];
     autoCreatePR?: boolean;
     autoMergePR?: boolean;
     prTargetBranch?: string;

@@ -257,20 +257,43 @@ class WorkLogMCPServer {
     }
     async handleSaveConversation(args) {
         const params = SaveConversationSchema.parse(args);
+        // Check if logging is enabled for this Claude project
+        if (this.config.enabledProjects && this.config.enabledProjects.length > 0) {
+            // Claude가 project 파라미터로 현재 프로젝트 이름을 전달할 것임
+            const currentProject = params.project;
+            if (currentProject && !this.config.enabledProjects.includes(currentProject)) {
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `이 프로젝트는 worklog 저장이 비활성화되어 있습니다: ${currentProject}\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}`
+                        }
+                    ]
+                };
+            }
+        }
         await this.gitManager.pull();
+        // 1. 오늘 첫 파일이면 어제 요약 먼저 생성
         const isFirstFileToday = await this.fileManager.isFirstFileOfDay(params.project);
         if (isFirstFileToday) {
             const yesterdaySummary = await this.summaryGenerator.createYesterdaySummary(params.project);
             if (yesterdaySummary) {
-                await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, params.project);
+                const summaryPath = await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, params.project);
+                await this.gitManager.addCommitPush(summaryPath, `Add daily summary for ${yesterdaySummary.date}`);
             }
         }
+        // 2. 현재 대화 내용 저장
         const filePath = await this.fileManager.saveConversation(params.content, params.summary, params.project);
         await this.gitManager.addCommitPush(filePath, `Add work log: ${params.summary}`);
         let prMessage = '';
         // 환경 변수로 자동 PR 생성이 활성화되어 있거나, 파라미터로 명시적으로 요청한 경우
         if (this.config.autoCreatePR || params.createPR) {
-            const today = new Date().toISOString().split('T')[0];
+            // 한국 시간 기준 오늘 날짜
+            const now = new Date();
+            const kstOffset = 9 * 60; // KST는 UTC+9
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const kstTime = new Date(utcTime + (kstOffset * 60000));
+            const today = kstTime.toISOString().split('T')[0];
             const result = await this.githubManager.createDailyPR(today);
             prMessage = result.success
                 ? `\nPull request created: ${result.prUrl}`

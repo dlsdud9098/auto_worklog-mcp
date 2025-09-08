@@ -12,6 +12,7 @@ export declare class FileManager {
     constructor(config: Config);
     private getToday;
     private getYesterday;
+    private getKSTTimestamp;
     isFirstFileOfDay(project?: string): Promise<boolean>;
     getNextFileNumber(date: string, project?: string): Promise<number>;
     saveConversation(content: string, summary: string, project?: string): Promise<string>;
@@ -19,6 +20,7 @@ export declare class FileManager {
     listLogs(branch?: string, project?: string, date?: string): Promise<LogEntry[]>;
     private getBranches;
     private getProjects;
+    summaryExists(date: string): Promise<boolean>;
     getLastSummary(project?: string): Promise<string | null>;
     getLogsForDate(date: string, project?: string): Promise<string[]>;
 }

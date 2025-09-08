@@ -257,20 +257,6 @@ class WorkLogMCPServer {
     }
     async handleSaveConversation(args) {
         const params = SaveConversationSchema.parse(args);
-        // Check if logging is enabled for this project
-        if (this.config.enabledProjects) {
-            const projectName = params.project || this.config.defaultProject || 'default';
-            if (!this.config.enabledProjects.includes(projectName)) {
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `일지 저장이 비활성화된 프로젝트입니다: ${projectName}`
-                        }
-                    ]
-                };
-            }
-        }
         await this.gitManager.pull();
         const isFirstFileToday = await this.fileManager.isFirstFileOfDay(params.project);
         if (isFirstFileToday) {

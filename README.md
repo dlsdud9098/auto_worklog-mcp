@@ -44,8 +44,7 @@ GIT_ACCESS_TOKEN=ghp_your_personal_access_token
 # 작업 브랜치 설정 (필수)
 WORK_BRANCH=feature/my-work
 
-# 프로젝트 설정 (선택)
-DEFAULT_PROJECT=my-project
+# 일일 노트 설정 (선택)
 USE_DAILY_NOTE=프로젝트 설명
 
 # Pull Request 자동화 (선택)
@@ -75,7 +74,6 @@ Claude Desktop의 설정 파일에 MCP 서버 추가:
         "GIT_USER_EMAIL": "your.email@example.com",
         "GIT_ACCESS_TOKEN": "your_github_personal_access_token",
         "WORK_BRANCH": "feature/my-work",
-        "DEFAULT_PROJECT": "my-project",
         "USE_DAILY_NOTE": "프로젝트 설명",
         "AUTO_CREATE_PR": "true",
         "AUTO_MERGE_PR": "false",
@@ -97,7 +95,6 @@ Claude Desktop을 재시작한 후 다음 도구들을 사용할 수 있습니�
 /use saveConversation
 content: "대화 내용"
 summary: "간단한 요약"
-project: "프로젝트명"  # 선택사항
 createPR: true  # 선택사항, PR 생성 여부 (AUTO_CREATE_PR이 true면 자동 생성)
 ```
 
@@ -106,7 +103,6 @@ createPR: true  # 선택사항, PR 생성 여부 (AUTO_CREATE_PR이 true면 자�
 ```
 /use createDailySummary
 date: "2025-01-08"  # 선택사항, 기본값은 어제
-project: "프로젝트명"  # 선택사항
 ```
 
 ### 3. 저장소 동기화
@@ -120,7 +116,6 @@ project: "프로젝트명"  # 선택사항
 ```
 /use listLogs
 branch: "feature/my-work"  # 선택사항
-project: "프로젝트명"  # 선택사항
 date: "2025-01-08"  # 선택사항
 ```
 
@@ -222,7 +217,6 @@ repository/
 - `WORK_BRANCH`: 작업 브랜치
 
 ### 선택 환경 변수
-- `DEFAULT_PROJECT`: 기본 프로젝트명
 - `USE_DAILY_NOTE`: 일일 노트 활성화 및 프로젝트 설명
 - `AUTO_CREATE_PR`: 자동 PR 생성 (`true`/`false`)
 - `AUTO_MERGE_PR`: 자동 PR 병합 (`true`/`false`)

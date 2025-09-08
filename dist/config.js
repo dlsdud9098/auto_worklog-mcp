@@ -25,7 +25,7 @@ export const config = {
         summariesBase: path.join(repoPath, '요약')
     },
     defaultProject: process.env.DEFAULT_PROJECT,
-    enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined,
+    useDailyNote: process.env.USE_DAILY_NOTE,
     autoCreatePR: process.env.AUTO_CREATE_PR === 'true',
     autoMergePR: process.env.AUTO_MERGE_PR === 'true',
     prTargetBranch: process.env.PR_TARGET_BRANCH || 'main',

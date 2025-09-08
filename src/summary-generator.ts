@@ -70,7 +70,6 @@ export class SummaryGenerator {
     return `# Daily Summary - ${date}
 
 Branch: ${this.config.gitBranch || 'main'}
-Project: ${this.config.defaultProject || 'default'}
 Total Logs: ${logs.length}
 
 ## 작업 목록
@@ -90,7 +89,6 @@ ${summaries.join('\n')}
     return `# Daily Summary - ${date}
 
 Branch: ${this.config.gitBranch || 'main'}
-Project: ${this.config.defaultProject || 'default'}
 Total Logs: 0
 
 ## 작업 내역 없음

@@ -14,6 +14,10 @@ export interface Config {
     };
     defaultProject?: string;
     enabledProjects?: string[];
+    autoCreatePR?: boolean;
+    autoMergePR?: boolean;
+    prTargetBranch?: string;
+    prMergeMethod?: 'merge' | 'squash' | 'rebase';
 }
 export declare const config: Config;
 //# sourceMappingURL=config.d.ts.map

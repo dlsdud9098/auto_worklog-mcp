@@ -20,6 +20,10 @@ export interface Config {
   };
   defaultProject?: string;
   enabledProjects?: string[];
+  autoCreatePR?: boolean;
+  autoMergePR?: boolean;
+  prTargetBranch?: string;
+  prMergeMethod?: 'merge' | 'squash' | 'rebase';
 }
 
 function ensureEnvVar(name: string, defaultValue?: string): string {
@@ -47,7 +51,11 @@ export const config: Config = {
     summariesBase: path.join(repoPath, '요약')
   },
   defaultProject: process.env.DEFAULT_PROJECT,
-  enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined
+  enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined,
+  autoCreatePR: process.env.AUTO_CREATE_PR === 'true',
+  autoMergePR: process.env.AUTO_MERGE_PR === 'true',
+  prTargetBranch: process.env.PR_TARGET_BRANCH || 'main',
+  prMergeMethod: (process.env.PR_MERGE_METHOD as 'merge' | 'squash' | 'rebase') || 'merge'
 };
 
 const devLogPath = path.join(config.paths.workLogBase, '개발일지');

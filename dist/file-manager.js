@@ -17,8 +17,7 @@ export class FileManager {
     async isFirstFileOfDay(project) {
         const today = this.getToday();
         const branch = this.config.gitBranch || 'main';
-        const projectName = project || this.config.defaultProject || 'default';
-        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, projectName, today);
+        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, today);
         try {
             const files = await fs.readdir(dirPath);
             const mdFiles = files.filter(f => f.endsWith('.md'));
@@ -30,20 +29,19 @@ export class FileManager {
     }
     async getNextFileNumber(date, project) {
         const branch = this.config.gitBranch || 'main';
-        const projectName = project || this.config.defaultProject || 'default';
-        const cacheKey = `${branch}/${projectName}/${date}`;
+        const cacheKey = `${branch}/${date}`;
         if (this.todayLogsCache.has(cacheKey)) {
             const nextNum = (this.todayLogsCache.get(cacheKey) || 0) + 1;
             this.todayLogsCache.set(cacheKey, nextNum);
             return nextNum;
         }
-        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, projectName, date);
+        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, date);
         try {
             const files = await fs.readdir(dirPath);
             const mdFiles = files.filter(f => f.endsWith('.md'));
             let maxNumber = 0;
             for (const file of mdFiles) {
-                const match = file.match(/^(\d{3})_/);
+                const match = file.match(/^(\d{3})-/);
                 if (match) {
                     const num = parseInt(match[1], 10);
                     if (num > maxNumber)
@@ -62,9 +60,8 @@ export class FileManager {
     async saveConversation(content, summary, project) {
         const today = this.getToday();
         const branch = this.config.gitBranch || 'main';
-        const projectName = project || this.config.defaultProject || 'default';
-        const fileNumber = await this.getNextFileNumber(today, projectName);
-        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, projectName, today);
+        const fileNumber = await this.getNextFileNumber(today);
+        const dirPath = path.join(this.config.paths.workLogBase, '개발일지', branch, today);
         await fs.mkdir(dirPath, { recursive: true });
         const paddedNumber = String(fileNumber).padStart(3, '0');
         const sanitizedSummary = summary.replace(/[^a-zA-Z0-9가-힣\s_]/g, '').substring(0, 50);
@@ -74,7 +71,6 @@ export class FileManager {
 
 Date: ${today}
 Branch: ${branch}
-Project: ${projectName}
 Log Number: ${paddedNumber}
 
 ---
@@ -89,9 +85,8 @@ ${content}
     }
     async saveSummary(date, content, project) {
         const branch = this.config.gitBranch || 'main';
-        const projectName = project || this.config.defaultProject || 'default';
         const fileName = `${date}-요약.md`;
-        const dirPath = path.join(this.config.paths.workLogBase, '요약', branch, projectName);
+        const dirPath = path.join(this.config.paths.workLogBase, '요약', branch);
         const filePath = path.join(dirPath, fileName);
         await fs.mkdir(dirPath, { recursive: true });
         await fs.writeFile(filePath, content, 'utf-8');
@@ -104,35 +99,30 @@ ${content}
             const branches = branch ? [branch] : await fs.readdir(workLogPath);
             for (const br of branches) {
                 const branchPath = path.join(workLogPath, br);
-                const projects = project ? [project] : await fs.readdir(branchPath);
-                for (const proj of projects) {
-                    const projectPath = path.join(branchPath, proj);
-                    const dates = date ? [date] : await fs.readdir(projectPath);
-                    for (const dt of dates) {
-                        if (!dt.match(/^\d{4}-\d{2}-\d{2}$/))
-                            continue;
-                        const datePath = path.join(projectPath, dt);
-                        try {
-                            const files = await fs.readdir(datePath);
-                            for (const file of files) {
-                                if (!file.endsWith('.md'))
-                                    continue;
-                                const match = file.match(/^(\d{3})-(.+)\.md$/);
-                                if (match) {
-                                    logs.push({
-                                        branch: br,
-                                        project: proj,
-                                        date: dt,
-                                        fileName: file,
-                                        filePath: path.join(datePath, file),
-                                        summary: match[2]
-                                    });
-                                }
+                const dates = date ? [date] : await fs.readdir(branchPath);
+                for (const dt of dates) {
+                    if (!dt.match(/^\d{4}-\d{2}-\d{2}$/))
+                        continue;
+                    const datePath = path.join(branchPath, dt);
+                    try {
+                        const files = await fs.readdir(datePath);
+                        for (const file of files) {
+                            if (!file.endsWith('.md'))
+                                continue;
+                            const match = file.match(/^(\d{3})-(.+)\.md$/);
+                            if (match) {
+                                logs.push({
+                                    branch: br,
+                                    date: dt,
+                                    fileName: file,
+                                    filePath: path.join(datePath, file),
+                                    summary: match[2]
+                                });
                             }
                         }
-                        catch (error) {
-                            continue;
-                        }
+                    }
+                    catch (error) {
+                        continue;
                     }
                 }
             }
@@ -185,8 +175,7 @@ ${content}
     async getLastSummary(project) {
         try {
             const branch = this.config.gitBranch || 'main';
-            const projectName = project || this.config.defaultProject || 'default';
-            const summaryPath = path.join(this.config.paths.workLogBase, '요약', branch, projectName);
+            const summaryPath = path.join(this.config.paths.workLogBase, '요약', branch);
             const files = await fs.readdir(summaryPath);
             const summaryFiles = files
                 .filter(f => f.endsWith('-요약.md'))

@@ -11,8 +11,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "simple-git": "^3.22.0",
+    "@octokit/rest": "^20.0.2",
     "dotenv": "^16.4.1",
+    "simple-git": "^3.28.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

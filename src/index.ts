@@ -11,12 +11,14 @@ import { z } from 'zod';
 import { GitManager } from './git-manager.js';
 import { FileManager } from './file-manager.js';
 import { SummaryGenerator } from './summary-generator.js';
+import { GitHubManager } from './github-manager.js';
 import { config, Config } from './config.js';
 
 const SaveConversationSchema = z.object({
   content: z.string().describe('The conversation content to save'),
   summary: z.string().describe('A brief summary of the conversation'),
-  project: z.string().optional().describe('Project name (defaults to config or "default")')
+  project: z.string().optional().describe('Project name (defaults to config or "default")'),
+  createPR: z.boolean().optional().describe('Create a pull request after saving (defaults to false)')
 });
 
 const CreateDailySummarySchema = z.object({
@@ -30,11 +32,28 @@ const ListLogsSchema = z.object({
   date: z.string().optional().describe('Date in YYYY-MM-DD format to filter logs')
 });
 
+const CreatePRSchema = z.object({
+  title: z.string().describe('Pull request title'),
+  body: z.string().describe('Pull request description'),
+  sourceBranch: z.string().optional().describe('Source branch (defaults to current branch)'),
+  targetBranch: z.string().optional().describe('Target branch (defaults to main)')
+});
+
+const ListPRsSchema = z.object({
+  state: z.enum(['open', 'closed', 'all']).optional().describe('PR state to filter (defaults to open)')
+});
+
+const MergePRSchema = z.object({
+  prNumber: z.number().describe('Pull request number to merge'),
+  mergeMethod: z.enum(['merge', 'squash', 'rebase']).optional().describe('Merge method (defaults to merge)')
+});
+
 class WorkLogMCPServer {
   private server: Server;
   private gitManager: GitManager;
   private fileManager: FileManager;
   private summaryGenerator: SummaryGenerator;
+  private githubManager: GitHubManager;
   private config: Config;
 
   constructor() {
@@ -54,6 +73,7 @@ class WorkLogMCPServer {
     this.gitManager = new GitManager(config);
     this.fileManager = new FileManager(config);
     this.summaryGenerator = new SummaryGenerator(config);
+    this.githubManager = new GitHubManager(config);
     
     this.setupHandlers();
     this.setupErrorHandling();
@@ -148,6 +168,78 @@ class WorkLogMCPServer {
             type: 'object',
             properties: {}
           }
+        },
+        {
+          name: 'createPR',
+          description: 'Create a pull request on GitHub',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              title: {
+                type: 'string',
+                description: 'Pull request title'
+              },
+              body: {
+                type: 'string',
+                description: 'Pull request description'
+              },
+              sourceBranch: {
+                type: 'string',
+                description: 'Source branch (defaults to current branch)'
+              },
+              targetBranch: {
+                type: 'string',
+                description: 'Target branch (defaults to main)'
+              }
+            },
+            required: ['title', 'body']
+          }
+        },
+        {
+          name: 'createDailyPR',
+          description: 'Create a pull request for today\'s work logs',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              date: {
+                type: 'string',
+                description: 'Date in YYYY-MM-DD format (defaults to today)'
+              }
+            }
+          }
+        },
+        {
+          name: 'listPRs',
+          description: 'List pull requests',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              state: {
+                type: 'string',
+                enum: ['open', 'closed', 'all'],
+                description: 'PR state to filter (defaults to open)'
+              }
+            }
+          }
+        },
+        {
+          name: 'mergePR',
+          description: 'Merge a pull request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prNumber: {
+                type: 'number',
+                description: 'Pull request number to merge'
+              },
+              mergeMethod: {
+                type: 'string',
+                enum: ['merge', 'squash', 'rebase'],
+                description: 'Merge method (defaults to merge)'
+              }
+            },
+            required: ['prNumber']
+          }
         }
       ]
     }));
@@ -167,6 +259,14 @@ class WorkLogMCPServer {
             return await this.handleListLogs(args);
           case 'getLastSummary':
             return await this.handleGetLastSummary();
+          case 'createPR':
+            return await this.handleCreatePR(args);
+          case 'createDailyPR':
+            return await this.handleCreateDailyPR(args);
+          case 'listPRs':
+            return await this.handleListPRs(args);
+          case 'mergePR':
+            return await this.handleMergePR(args);
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -223,11 +323,32 @@ class WorkLogMCPServer {
       `Add work log: ${params.summary}`
     );
     
+    let prMessage = '';
+    // 환경 변수로 자동 PR 생성이 활성화되어 있거나, 파라미터로 명시적으로 요청한 경우
+    if (this.config.autoCreatePR || params.createPR) {
+      const today = new Date().toISOString().split('T')[0];
+      const result = await this.githubManager.createDailyPR(today);
+      prMessage = result.success 
+        ? `\nPull request created: ${result.prUrl}`
+        : `\nFailed to create PR: ${result.message}`;
+      
+      // 자동 병합이 활성화되어 있고 PR 생성이 성공한 경우
+      if (this.config.autoMergePR && result.success && result.prNumber) {
+        const mergeResult = await this.githubManager.mergePullRequest(
+          result.prNumber,
+          this.config.prMergeMethod || 'merge'
+        );
+        prMessage += mergeResult.success
+          ? `\nPR automatically merged!`
+          : `\nFailed to auto-merge: ${mergeResult.message}`;
+      }
+    }
+    
     return {
       content: [
         {
           type: 'text',
-          text: `Conversation saved to ${filePath} and pushed to repository`
+          text: `Conversation saved to ${filePath} and pushed to repository${prMessage}`
         }
       ]
     };
@@ -309,6 +430,97 @@ class WorkLogMCPServer {
         {
           type: 'text',
           text: summary
+        }
+      ]
+    };
+  }
+
+  private async handleCreatePR(args: unknown) {
+    const params = CreatePRSchema.parse(args);
+    
+    const result = await this.githubManager.createPullRequest(
+      params.title,
+      params.body,
+      params.sourceBranch,
+      params.targetBranch
+    );
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: result.success 
+            ? `✅ ${result.message}\nPR URL: ${result.prUrl}`
+            : `❌ ${result.message}`
+        }
+      ]
+    };
+  }
+
+  private async handleCreateDailyPR(args: unknown) {
+    const params = z.object({
+      date: z.string().optional()
+    }).parse(args);
+    
+    const result = await this.githubManager.createDailyPR(params.date);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: result.success 
+            ? `✅ ${result.message}\nPR URL: ${result.prUrl}`
+            : `❌ ${result.message}`
+        }
+      ]
+    };
+  }
+
+  private async handleListPRs(args: unknown) {
+    const params = ListPRsSchema.parse(args);
+    
+    const prs = await this.githubManager.listPullRequests(params.state || 'open');
+    
+    if (prs.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'No pull requests found'
+          }
+        ]
+      };
+    }
+    
+    const prList = prs.map(pr => 
+      `#${pr.number}: ${pr.title}\n  State: ${pr.state}\n  Branch: ${pr.head} → ${pr.base}\n  URL: ${pr.url}`
+    ).join('\n\n');
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: prList
+        }
+      ]
+    };
+  }
+
+  private async handleMergePR(args: unknown) {
+    const params = MergePRSchema.parse(args);
+    
+    const result = await this.githubManager.mergePullRequest(
+      params.prNumber,
+      params.mergeMethod || 'merge'
+    );
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: result.success 
+            ? `✅ ${result.message}`
+            : `❌ ${result.message}`
         }
       ]
     };

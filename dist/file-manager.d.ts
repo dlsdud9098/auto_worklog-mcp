@@ -1,7 +1,6 @@
 import { Config } from './config.js';
 export interface LogEntry {
     branch: string;
-    project: string;
     date: string;
     fileName: string;
     filePath: string;

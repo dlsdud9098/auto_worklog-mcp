@@ -1,6 +1,6 @@
 # auto_worklog-mcp
 
-Claude와의 대화를 자동으로 Git 저장소에 기록하는 MCP (Model Context Protocol) 서버
+Claude와의 대화를 자동으로 Git 저장소에 기록하고 Pull Request를 관리하는 MCP (Model Context Protocol) 서버
 
 ## 기능
 
@@ -8,8 +8,9 @@ Claude와의 대화를 자동으로 Git 저장소에 기록하는 MCP (Model Con
 - 📝 대화 내용을 체계적인 폴더 구조로 저장
 - 📊 일일 작업 요약 자동 생성
 - 🌿 브랜치별 작업 분리 관리
-- 📊 자동 일일 작업 요약 생성
+- 🔀 자동 Pull Request 생성 및 병합
 - 🔧 Git 충돌 자동 해결
+- 📋 GitHub PR 관리 (생성, 조회, 병합)
 
 ## 설치
 
@@ -43,8 +44,15 @@ GIT_ACCESS_TOKEN=ghp_your_personal_access_token
 # 작업 브랜치 설정 (필수)
 WORK_BRANCH=feature/my-work
 
-# 프로젝트 설정 (선택 - 기본 프로젝트명)
+# 프로젝트 설정 (선택)
 DEFAULT_PROJECT=my-project
+USE_DAILY_NOTE=프로젝트 설명
+
+# Pull Request 자동화 (선택)
+AUTO_CREATE_PR=false
+AUTO_MERGE_PR=false
+PR_TARGET_BRANCH=main
+PR_MERGE_METHOD=merge
 ```
 
 ### 3. Claude Desktop 설정
@@ -65,9 +73,14 @@ Claude Desktop의 설정 파일에 MCP 서버 추가:
         "GIT_BRANCH": "main",
         "GIT_USER_NAME": "Your Name",
         "GIT_USER_EMAIL": "your.email@example.com",
-        "GIT_ACCESS_TOKEN": "your_token",
+        "GIT_ACCESS_TOKEN": "your_github_personal_access_token",
         "WORK_BRANCH": "feature/my-work",
-        "DEFAULT_PROJECT": "my-project"
+        "DEFAULT_PROJECT": "my-project",
+        "USE_DAILY_NOTE": "프로젝트 설명",
+        "AUTO_CREATE_PR": "true",
+        "AUTO_MERGE_PR": "false",
+        "PR_TARGET_BRANCH": "main",
+        "PR_MERGE_METHOD": "merge"
       }
     }
   }
@@ -84,7 +97,8 @@ Claude Desktop을 재시작한 후 다음 도구들을 사용할 수 있습니�
 /use saveConversation
 content: "대화 내용"
 summary: "간단한 요약"
-project: "프로젝트명"  # 선택사항, 기본값은 DEFAULT_PROJECT 또는 "default"
+project: "프로젝트명"  # 선택사항
+createPR: true  # 선택사항, PR 생성 여부 (AUTO_CREATE_PR이 true면 자동 생성)
 ```
 
 ### 2. 일일 요약 생성
@@ -116,22 +130,55 @@ date: "2025-01-08"  # 선택사항
 /use getLastSummary
 ```
 
+### 6. Pull Request 생성
+
+```
+/use createPR
+title: "PR 제목"
+body: "PR 설명"
+sourceBranch: "feature/branch"  # 선택사항, 기본값은 현재 브랜치
+targetBranch: "main"  # 선택사항, 기본값은 PR_TARGET_BRANCH
+```
+
+### 7. 일일 작업 PR 생성
+
+```
+/use createDailyPR
+date: "2025-01-08"  # 선택사항, 기본값은 오늘
+```
+
+### 8. PR 목록 조회
+
+```
+/use listPRs
+state: "open"  # open, closed, all 중 선택
+```
+
+### 9. PR 병합
+
+```
+/use mergePR
+prNumber: 123
+mergeMethod: "merge"  # merge, squash, rebase 중 선택
+```
+
 ## 폴더 구조
 
 ```
 repository/
 ├── 개발일지/
-│   ├── main/
-│   │   └── 프로젝트명/
-│   │       └── 2025-01-08/
-│   │           ├── 001-초기설정.md
-│   │           └── 002-버그수정.md
-│   └── feature-branch/
-│       └── 프로젝트명/
-│           └── 2025-01-08/
-│               └── 001-신규기능.md
-└── summaries/
-    └── daily-summary-2025-01-08.md
+│   ├── branch_name/
+│   │   └── YYYY-MM-DD/
+│   │       ├── 001-작업요약.md
+│   │       └── 002-버그수정.md
+│   └── branch_name2/
+│       └── YYYY-MM-DD/
+│           └── 001-신규기능.md
+└── 요약/
+    ├── branch_name/
+    │   └── YYYY-MM-DD-요약.md
+    └── branch_name2/
+        └── YYYY-MM-DD-요약.md
 ```
 
 ## Personal Access Token 생성
@@ -140,7 +187,9 @@ repository/
 
 1. GitHub Settings → Developer settings → Personal access tokens
 2. "Generate new token (classic)" 클릭
-3. 권한 선택: `repo` (전체)
+3. 권한 선택:
+   - `repo` (전체) - 필수: 저장소 접근 및 PR 관리
+   - `workflow` (선택) - GitHub Actions 사용 시
 4. 토큰 생성 및 복사
 
 ### GitLab
@@ -161,6 +210,34 @@ repository/
 - Personal Access Token 만료 확인
 - 네트워크 연결 상태 확인
 - Git 저장소 경로 확인
+
+## 환경 변수 설명
+
+### 필수 환경 변수
+- `GIT_REPO_PATH`: Git 저장소 경로
+- `GIT_BRANCH`: 작업 브랜치
+- `GIT_USER_NAME`: Git 사용자 이름
+- `GIT_USER_EMAIL`: Git 사용자 이메일
+- `GIT_ACCESS_TOKEN`: GitHub Personal Access Token
+- `WORK_BRANCH`: 작업 브랜치
+
+### 선택 환경 변수
+- `DEFAULT_PROJECT`: 기본 프로젝트명
+- `USE_DAILY_NOTE`: 일일 노트 활성화 및 프로젝트 설명
+- `AUTO_CREATE_PR`: 자동 PR 생성 (`true`/`false`)
+- `AUTO_MERGE_PR`: 자동 PR 병합 (`true`/`false`)
+- `PR_TARGET_BRANCH`: PR 대상 브랜치 (기본값: `main`)
+- `PR_MERGE_METHOD`: PR 병합 방식 (`merge`/`squash`/`rebase`)
+
+## 워크플로우
+
+### 자동 PR 워크플로우
+1. Claude와 대화
+2. 대화 내용 정리
+3. `개발일지/branch/YYYY-MM-DD/NNN-요약.md` 저장
+4. Git pull → commit → push
+5. Pull Request 자동 생성 (`AUTO_CREATE_PR=true`)
+6. PR 자동 병합 (`AUTO_MERGE_PR=true`)
 
 ## 개발
 

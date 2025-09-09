@@ -7,7 +7,7 @@ Claude와의 대화를 자동으로 작업일지로 저장하는 MCP (Model Cont
 - **파일 시스템 전용**: 일지 파일 생성 및 관리에만 집중
 - **Git 분리**: Git 작업은 별도 GitHub MCP를 통해 처리
 - **체계적 구조**: 브랜치별, 날짜별 자동 정리
-- **프로젝트별 관리**: 특정 프로젝트에서만 작업일지 저장 가능
+- **프로젝트별 인스턴스**: 각 프로젝트마다 별도 MCP 서버 설정
 
 ## 📋 기능
 
@@ -29,22 +29,60 @@ npm run build
 
 ### 2. Claude Desktop 설정
 
-Claude Desktop의 설정 파일에 MCP 서버 추가:
+Claude Desktop의 설정 파일에 프로젝트별 MCP 서버 추가:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
 **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
+#### 단일 프로젝트 설정
+
 ```json
 {
   "mcpServers": {
-    "auto_worklog": {
+    "worklog_프로젝트1": {
       "command": "node",
       "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
       "env": {
         "WORKLOG_PATH": "/home/apic/python/worklog",
         "WORK_BRANCH": "Inyoung",
-        "USE_DAILY_NOTE": "프로젝트1,프로젝트2"
+        "PROJECT_NAME": "프로젝트1"
+      }
+    }
+  }
+}
+```
+
+#### 여러 프로젝트 설정
+
+```json
+{
+  "mcpServers": {
+    "worklog_글리터홈페이지": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "글리터 홈페이지"
+      }
+    },
+    "worklog_publishing": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "publishing.gltr-ous.us"
+      }
+    },
+    "worklog_text2cuts": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "text2cuts"
       }
     }
   }
@@ -56,13 +94,7 @@ Claude Desktop의 설정 파일에 MCP 서버 추가:
 ### 필수 환경 변수
 - `WORKLOG_PATH`: 작업일지 저장 경로 (기본값: `/home/apic/python/worklog`)
 - `WORK_BRANCH`: 작업 브랜치명 (기본값: `Inyoung`)
-
-### 선택 환경 변수
-- `USE_DAILY_NOTE`: 작업일지를 활성화할 프로젝트 목록 (쉼표 구분)
-  - 예: `"글리터 홈페이지,publishing.gltr-ous.us,text2cuts"`
-  - 이 목록에 있는 프로젝트에서만 작업일지가 저장됨
-  - 비어있으면 모든 프로젝트에서 활성화
-  - 설정되어 있으면 반드시 project 파라미터 지정 필요
+- `PROJECT_NAME`: 프로젝트 이름 (필수, 기본값 없음)
 
 ## 📁 폴더 구조
 
@@ -71,12 +103,12 @@ ${WORKLOG_PATH}/
 ├── 개발일지/
 │   ├── ${WORK_BRANCH}/
 │   │   └── YYYY-MM-DD/
-│   │       ├── 001-작업요약.md
-│   │       ├── 002-버그수정.md
-│   │       └── 003-기능추가.md
+│   │       ├── 001-[프로젝트1]작업요약.md
+│   │       ├── 002-[프로젝트2]버그수정.md
+│   │       └── 003-[프로젝트1]기능추가.md
 │   └── [다른브랜치]/
 │       └── YYYY-MM-DD/
-│           └── 001-신규기능.md
+│           └── 001-[프로젝트3]신규기능.md
 └── 요약/
     ├── ${WORK_BRANCH}/
     │   └── YYYY-MM-DD-요약.md
@@ -86,8 +118,9 @@ ${WORKLOG_PATH}/
 
 ## 📝 파일명 규칙
 
-- **개발일지**: `[3자리번호]-[작업내용요약].md`
+- **개발일지**: `[3자리번호]-[프로젝트명]작업내용요약.md`
   - 번호: 001부터 당일 기준 순차 증가
+  - 프로젝트명: PROJECT_NAME 환경변수 값
   - 요약: 50자 이내, 특수문자 제거
 - **요약파일**: `YYYY-MM-DD-요약.md`
 
@@ -99,6 +132,7 @@ ${WORKLOG_PATH}/
 
 Date: YYYY-MM-DD
 Branch: [브랜치명]
+Project: [프로젝트명]
 Log Number: [순번]
 
 ---
@@ -129,44 +163,60 @@ Branch: [브랜치명]
 
 ## 🔧 사용법
 
-Claude Desktop을 재시작한 후 다음 도구들을 사용할 수 있습니다:
+Claude Desktop을 재시작한 후 각 프로젝트별로 설정된 MCP 도구를 사용합니다.
 
-### 1. 대화 저장
+### CLI에서 사용
+
+각 프로젝트는 별도의 MCP 서버로 구성되어 있으므로, 프로젝트별로 다른 명령어를 사용합니다:
+
+```bash
+# 글리터 홈페이지 프로젝트 작업일지 저장
+/use worklog_글리터홈페이지 saveConversation
+content: "오늘 작업한 내용..."
+summary: "기능 구현 완료"
+
+# publishing 프로젝트 작업일지 저장
+/use worklog_publishing saveConversation
+content: "버그 수정 내용..."
+summary: "로그인 에러 해결"
+
+# text2cuts 프로젝트 작업일지 저장
+/use worklog_text2cuts saveConversation
+content: "새 기능 추가..."
+summary: "이미지 처리 모듈 구현"
+```
+
+### 도구 목록
+
+각 프로젝트 MCP 서버는 동일한 도구를 제공합니다:
+
+#### 1. 대화 저장
 
 ```
-/use saveConversation
+/use worklog_[프로젝트키] saveConversation
 content: "대화 내용"
 summary: "간단한 요약"
-project: "프로젝트명"  # 선택사항
 ```
 
-**프로젝트 지정 방법:**
-- `project` 파라미터로 프로젝트명 지정
-- `USE_DAILY_NOTE`가 설정된 경우 반드시 project 지정 필요
-- `USE_DAILY_NOTE` 목록에 없는 프로젝트는 저장되지 않음
-- `USE_DAILY_NOTE`가 비어있으면 모든 프로젝트 허용 (project 생략 시 'default' 사용)
-
-### 2. 일일 요약 생성
+#### 2. 일일 요약 생성
 
 ```
-/use createDailySummary
+/use worklog_[프로젝트키] createDailySummary
 date: "2025-01-15"  # 선택사항, 기본값은 어제
-project: "프로젝트명"  # 선택사항
 ```
 
-### 3. 로그 목록 조회
+#### 3. 로그 목록 조회
 
 ```
-/use listLogs
+/use worklog_[프로젝트키] listLogs
 branch: "Inyoung"  # 선택사항
 date: "2025-01-15"  # 선택사항
 ```
 
-### 4. 최근 요약 조회
+#### 4. 최근 요약 조회
 
 ```
-/use getLastSummary
-project: "프로젝트명"  # 선택사항
+/use worklog_[프로젝트키] getLastSummary
 ```
 
 ## 🔄 Git 작업 연동
@@ -184,16 +234,15 @@ project: "프로젝트명"  # 선택사항
 ## 💡 워크플로우 예시
 
 1. Claude와 대화하며 작업 수행
-2. 작업 완료 후 `saveConversation` 도구로 일지 저장
+2. 작업 완료 후 해당 프로젝트의 `saveConversation` 도구로 일지 저장
 3. GitHub MCP를 사용하여 Git 작업 수행
 4. 필요시 PR 생성 및 병합
 
 ## 🚨 문제 해결
 
-### 프로젝트 오류
-- "프로젝트 '...'는 worklog 저장이 비활성화" 메시지:
-  - `USE_DAILY_NOTE`에 해당 프로젝트 추가
-  - 또는 `USE_DAILY_NOTE`를 비워서 모든 프로젝트 허용
+### 프로젝트 설정 오류
+- 각 프로젝트마다 별도의 MCP 서버 키 필요
+- PROJECT_NAME 환경변수 필수
 
 ### 경로 오류
 - `WORKLOG_PATH`가 올바른 경로인지 확인
@@ -201,6 +250,7 @@ project: "프로젝트명"  # 선택사항
 
 ## 📌 버전 정보
 
+- **v3.0.0**: 프로젝트별 MCP 인스턴스 방식 (project 파라미터 제거)
 - **v2.0.0**: Git 기능 분리, 파일 관리 전용
 - **v1.0.0**: 초기 버전 (Git 통합)
 

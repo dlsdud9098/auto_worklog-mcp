@@ -13,13 +13,15 @@ function ensureEnvVar(name, defaultValue) {
 const workLogPath = ensureEnvVar('WORKLOG_PATH', '/home/apic/python/worklog');
 // 작업 브랜치명 (필수)
 const workBranch = ensureEnvVar('WORK_BRANCH', 'Inyoung');
+// 프로젝트 이름 (필수)
+const projectName = ensureEnvVar('PROJECT_NAME');
 export const config = {
     gitBranch: workBranch,
+    projectName: projectName,
     paths: {
         workLogBase: workLogPath,
         summariesBase: path.join(workLogPath, '요약')
-    },
-    enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined
+    }
 };
 // 필수 디렉토리 생성
 const devLogPath = path.join(config.paths.workLogBase, '개발일지');

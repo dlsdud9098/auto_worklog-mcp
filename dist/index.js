@@ -8,16 +8,13 @@ import { SummaryGenerator } from './summary-generator.js';
 import { config } from './config.js';
 const SaveConversationSchema = z.object({
     content: z.string().describe('The conversation content to save'),
-    summary: z.string().describe('A brief summary of the conversation'),
-    project: z.string().optional().describe('Project name (defaults to config or "default")')
+    summary: z.string().describe('A brief summary of the conversation')
 });
 const CreateDailySummarySchema = z.object({
-    date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to yesterday)'),
-    project: z.string().optional().describe('Project name to create summary for')
+    date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to yesterday)')
 });
 const ListLogsSchema = z.object({
     branch: z.string().optional().describe('Branch name to filter logs'),
-    project: z.string().optional().describe('Project name to filter logs'),
     date: z.string().optional().describe('Date in YYYY-MM-DD format to filter logs')
 });
 class WorkLogMCPServer {
@@ -65,10 +62,6 @@ class WorkLogMCPServer {
                             summary: {
                                 type: 'string',
                                 description: 'A brief summary of the conversation'
-                            },
-                            project: {
-                                type: 'string',
-                                description: 'Project name (defaults to config or "default")'
                             }
                         },
                         required: ['content', 'summary']
@@ -83,10 +76,6 @@ class WorkLogMCPServer {
                             date: {
                                 type: 'string',
                                 description: 'Date in YYYY-MM-DD format (defaults to yesterday)'
-                            },
-                            project: {
-                                type: 'string',
-                                description: 'Project name to create summary for'
                             }
                         }
                     }
@@ -101,10 +90,6 @@ class WorkLogMCPServer {
                                 type: 'string',
                                 description: 'Branch name to filter logs'
                             },
-                            project: {
-                                type: 'string',
-                                description: 'Project name to filter logs'
-                            },
                             date: {
                                 type: 'string',
                                 description: 'Date in YYYY-MM-DD format to filter logs'
@@ -117,12 +102,7 @@ class WorkLogMCPServer {
                     description: 'Get the most recent daily summary',
                     inputSchema: {
                         type: 'object',
-                        properties: {
-                            project: {
-                                type: 'string',
-                                description: 'Project name to get summary for'
-                            }
-                        }
+                        properties: {}
                     }
                 }
             ]
@@ -152,47 +132,19 @@ class WorkLogMCPServer {
     }
     async handleSaveConversation(args) {
         const params = SaveConversationSchema.parse(args);
-        // USE_DAILY_NOTE가 설정되어 있으면 해당 프로젝트만 허용
-        if (this.config.enabledProjects && this.config.enabledProjects.length > 0) {
-            // 프로젝트가 지정되지 않으면 저장하지 않음
-            if (!params.project) {
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `⚠️ 프로젝트가 지정되지 않았습니다.\n\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}\n\n위 프로젝트 중 하나를 project 파라미터로 지정하세요.`
-                        }
-                    ]
-                };
-            }
-            // 프로젝트가 활성화 목록에 있는지 확인
-            if (!this.config.enabledProjects.includes(params.project)) {
-                // 활성화되지 않은 프로젝트는 저장하지 않음
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `⚠️ 프로젝트 '${params.project}'는 worklog 저장이 비활성화되어 있습니다.\n\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}\n\n이 프로젝트를 활성화하려면 설정에서 USE_DAILY_NOTE에 추가하세요.`
-                        }
-                    ]
-                };
-            }
-        }
-        // USE_DAILY_NOTE가 없으면 모든 프로젝트 허용 (project 없으면 'default' 사용)
-        if (!params.project) {
-            params.project = 'default';
-        }
+        // 프로젝트는 환경변수에서 가져옴
+        const project = this.config.projectName;
         // 1. 오늘 첫 파일이면 어제 요약 먼저 생성
-        const isFirstFileToday = await this.fileManager.isFirstFileOfDay(params.project);
+        const isFirstFileToday = await this.fileManager.isFirstFileOfDay(project);
         let yesterdaySummaryPath = null;
         if (isFirstFileToday) {
-            const yesterdaySummary = await this.summaryGenerator.createYesterdaySummary(params.project);
+            const yesterdaySummary = await this.summaryGenerator.createYesterdaySummary(project);
             if (yesterdaySummary) {
-                yesterdaySummaryPath = await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, params.project);
+                yesterdaySummaryPath = await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, project);
             }
         }
         // 2. 현재 대화 내용 저장
-        const filePath = await this.fileManager.saveConversation(params.content, params.summary, params.project);
+        const filePath = await this.fileManager.saveConversation(params.content, params.summary, project);
         // 3. 저장 결과 반환
         let message = `✅ 작업일지가 저장되었습니다:\n📁 ${filePath}`;
         if (yesterdaySummaryPath) {
@@ -215,8 +167,9 @@ class WorkLogMCPServer {
     }
     async handleCreateDailySummary(args) {
         const params = CreateDailySummarySchema.parse(args);
-        const summary = await this.summaryGenerator.createSummary(params.date, params.project);
-        const summaryPath = await this.fileManager.saveSummary(summary.date, summary.content, params.project);
+        const project = this.config.projectName;
+        const summary = await this.summaryGenerator.createSummary(params.date, project);
+        const summaryPath = await this.fileManager.saveSummary(summary.date, summary.content, project);
         return {
             content: [
                 {
@@ -228,7 +181,8 @@ class WorkLogMCPServer {
     }
     async handleListLogs(args) {
         const params = ListLogsSchema.parse(args);
-        const logs = await this.fileManager.listLogs(params.branch, params.project, params.date);
+        const project = this.config.projectName;
+        const logs = await this.fileManager.listLogs(params.branch, project, params.date);
         if (logs.length === 0) {
             return {
                 content: [
@@ -250,15 +204,8 @@ class WorkLogMCPServer {
         };
     }
     async handleGetLastSummary(args) {
-        const params = z.object({
-            project: z.string().optional()
-        }).parse(args);
-        // USE_DAILY_NOTE가 설정되어 있고 프로젝트가 지정되지 않으면 첫 번째 프로젝트 사용
-        let targetProject = params.project;
-        if (!targetProject && this.config.enabledProjects && this.config.enabledProjects.length > 0) {
-            targetProject = this.config.enabledProjects[0];
-        }
-        const summary = await this.fileManager.getLastSummary(targetProject);
+        const project = this.config.projectName;
+        const summary = await this.fileManager.getLastSummary(project);
         if (!summary) {
             return {
                 content: [

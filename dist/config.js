@@ -1,44 +1,34 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.config = void 0;
-var dotenv = require("dotenv");
-var path = require("path");
-var fs = require("fs");
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import * as fs from 'fs';
 dotenv.config();
 function ensureEnvVar(name, defaultValue) {
-    var value = process.env[name] || defaultValue;
+    const value = process.env[name] || defaultValue;
     if (!value) {
-        throw new Error("Missing required environment variable: ".concat(name));
+        throw new Error(`Missing required environment variable: ${name}`);
     }
     return value;
 }
-var repoPath = ensureEnvVar('GIT_REPO_PATH');
-exports.config = {
-    git: {
-        repoPath: repoPath,
-        branch: ensureEnvVar('GIT_BRANCH', 'main'),
-        workBranch: ensureEnvVar('WORK_BRANCH'),
-        userName: ensureEnvVar('GIT_USER_NAME'),
-        userEmail: ensureEnvVar('GIT_USER_EMAIL'),
-        accessToken: ensureEnvVar('GIT_ACCESS_TOKEN')
-    },
-    gitBranch: ensureEnvVar('GIT_BRANCH', 'main'),
+// 작업일지 저장 경로 (필수)
+const workLogPath = ensureEnvVar('WORKLOG_PATH', '/home/apic/python/worklog');
+// 작업 브랜치명 (필수)
+const workBranch = ensureEnvVar('WORK_BRANCH', 'Inyoung');
+export const config = {
+    gitBranch: workBranch,
     paths: {
-        workLogBase: repoPath,
-        summariesBase: path.join(repoPath, '요약')
+        workLogBase: workLogPath,
+        summariesBase: path.join(workLogPath, '요약')
     },
     defaultProject: process.env.DEFAULT_PROJECT,
-    enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(function (p) { return p.trim(); }) : undefined,
-    autoCreatePR: process.env.AUTO_CREATE_PR === 'true',
-    autoMergePR: process.env.AUTO_MERGE_PR === 'true',
-    prTargetBranch: process.env.PR_TARGET_BRANCH || 'main',
-    prMergeMethod: process.env.PR_MERGE_METHOD || 'merge'
+    enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined
 };
-var devLogPath = path.join(exports.config.paths.workLogBase, '개발일지');
-var summaryPath = path.join(exports.config.paths.workLogBase, '요약');
+// 필수 디렉토리 생성
+const devLogPath = path.join(config.paths.workLogBase, '개발일지');
+const summaryPath = path.join(config.paths.workLogBase, '요약');
 if (!fs.existsSync(devLogPath)) {
     fs.mkdirSync(devLogPath, { recursive: true });
 }
 if (!fs.existsSync(summaryPath)) {
     fs.mkdirSync(summaryPath, { recursive: true });
 }
+//# sourceMappingURL=config.js.map

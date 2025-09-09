@@ -3,16 +3,13 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { GitManager } from './git-manager.js';
 import { FileManager } from './file-manager.js';
 import { SummaryGenerator } from './summary-generator.js';
-import { GitHubManager } from './github-manager.js';
 import { config } from './config.js';
 const SaveConversationSchema = z.object({
     content: z.string().describe('The conversation content to save'),
     summary: z.string().describe('A brief summary of the conversation'),
-    project: z.string().optional().describe('Project name (defaults to config or "default")'),
-    createPR: z.boolean().optional().describe('Create a pull request after saving (defaults to false)')
+    project: z.string().optional().describe('Project name (defaults to config or "default")')
 });
 const CreateDailySummarySchema = z.object({
     date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to yesterday)'),
@@ -23,40 +20,23 @@ const ListLogsSchema = z.object({
     project: z.string().optional().describe('Project name to filter logs'),
     date: z.string().optional().describe('Date in YYYY-MM-DD format to filter logs')
 });
-const CreatePRSchema = z.object({
-    title: z.string().describe('Pull request title'),
-    body: z.string().describe('Pull request description'),
-    sourceBranch: z.string().optional().describe('Source branch (defaults to current branch)'),
-    targetBranch: z.string().optional().describe('Target branch (defaults to main)')
-});
-const ListPRsSchema = z.object({
-    state: z.enum(['open', 'closed', 'all']).optional().describe('PR state to filter (defaults to open)')
-});
-const MergePRSchema = z.object({
-    prNumber: z.number().describe('Pull request number to merge'),
-    mergeMethod: z.enum(['merge', 'squash', 'rebase']).optional().describe('Merge method (defaults to merge)')
-});
 class WorkLogMCPServer {
     server;
-    gitManager;
     fileManager;
     summaryGenerator;
-    githubManager;
     config;
     constructor() {
         this.server = new Server({
             name: 'auto_worklog-mcp',
-            version: '1.0.0',
+            version: '2.0.0',
         }, {
             capabilities: {
                 tools: {},
             },
         });
         this.config = config;
-        this.gitManager = new GitManager(config);
         this.fileManager = new FileManager(config);
         this.summaryGenerator = new SummaryGenerator(config);
-        this.githubManager = new GitHubManager(config);
         this.setupHandlers();
         this.setupErrorHandling();
     }
@@ -74,7 +54,7 @@ class WorkLogMCPServer {
             tools: [
                 {
                     name: 'saveConversation',
-                    description: 'Save a conversation to the Git repository',
+                    description: 'Save a conversation to the worklog directory',
                     inputSchema: {
                         type: 'object',
                         properties: {
@@ -112,14 +92,6 @@ class WorkLogMCPServer {
                     }
                 },
                 {
-                    name: 'syncRepository',
-                    description: 'Sync the Git repository (pull and push)',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {}
-                    }
-                },
-                {
                     name: 'listLogs',
                     description: 'List saved work logs',
                     inputSchema: {
@@ -145,79 +117,12 @@ class WorkLogMCPServer {
                     description: 'Get the most recent daily summary',
                     inputSchema: {
                         type: 'object',
-                        properties: {}
-                    }
-                },
-                {
-                    name: 'createPR',
-                    description: 'Create a pull request on GitHub',
-                    inputSchema: {
-                        type: 'object',
                         properties: {
-                            title: {
+                            project: {
                                 type: 'string',
-                                description: 'Pull request title'
-                            },
-                            body: {
-                                type: 'string',
-                                description: 'Pull request description'
-                            },
-                            sourceBranch: {
-                                type: 'string',
-                                description: 'Source branch (defaults to current branch)'
-                            },
-                            targetBranch: {
-                                type: 'string',
-                                description: 'Target branch (defaults to main)'
-                            }
-                        },
-                        required: ['title', 'body']
-                    }
-                },
-                {
-                    name: 'createDailyPR',
-                    description: 'Create a pull request for today\'s work logs',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {
-                            date: {
-                                type: 'string',
-                                description: 'Date in YYYY-MM-DD format (defaults to today)'
+                                description: 'Project name to get summary for'
                             }
                         }
-                    }
-                },
-                {
-                    name: 'listPRs',
-                    description: 'List pull requests',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {
-                            state: {
-                                type: 'string',
-                                enum: ['open', 'closed', 'all'],
-                                description: 'PR state to filter (defaults to open)'
-                            }
-                        }
-                    }
-                },
-                {
-                    name: 'mergePR',
-                    description: 'Merge a pull request',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {
-                            prNumber: {
-                                type: 'number',
-                                description: 'Pull request number to merge'
-                            },
-                            mergeMethod: {
-                                type: 'string',
-                                enum: ['merge', 'squash', 'rebase'],
-                                description: 'Merge method (defaults to merge)'
-                            }
-                        },
-                        required: ['prNumber']
                     }
                 }
             ]
@@ -230,20 +135,10 @@ class WorkLogMCPServer {
                         return await this.handleSaveConversation(args);
                     case 'createDailySummary':
                         return await this.handleCreateDailySummary(args);
-                    case 'syncRepository':
-                        return await this.handleSyncRepository();
                     case 'listLogs':
                         return await this.handleListLogs(args);
                     case 'getLastSummary':
-                        return await this.handleGetLastSummary();
-                    case 'createPR':
-                        return await this.handleCreatePR(args);
-                    case 'createDailyPR':
-                        return await this.handleCreateDailyPR(args);
-                    case 'listPRs':
-                        return await this.handleListPRs(args);
-                    case 'mergePR':
-                        return await this.handleMergePR(args);
+                        return await this.handleGetLastSummary(args);
                     default:
                         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
                 }
@@ -280,45 +175,33 @@ class WorkLogMCPServer {
         if (!params.project) {
             params.project = this.config.defaultProject || 'default';
         }
-        await this.gitManager.pull();
         // 1. 오늘 첫 파일이면 어제 요약 먼저 생성
         const isFirstFileToday = await this.fileManager.isFirstFileOfDay(params.project);
+        let yesterdaySummaryPath = null;
         if (isFirstFileToday) {
             const yesterdaySummary = await this.summaryGenerator.createYesterdaySummary(params.project);
             if (yesterdaySummary) {
-                const summaryPath = await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, params.project);
-                await this.gitManager.addCommitPush(summaryPath, `Add daily summary for ${yesterdaySummary.date}`);
+                yesterdaySummaryPath = await this.fileManager.saveSummary(yesterdaySummary.date, yesterdaySummary.content, params.project);
             }
         }
         // 2. 현재 대화 내용 저장
         const filePath = await this.fileManager.saveConversation(params.content, params.summary, params.project);
-        await this.gitManager.addCommitPush(filePath, `Add work log: ${params.summary}`);
-        let prMessage = '';
-        // 환경 변수로 자동 PR 생성이 활성화되어 있거나, 파라미터로 명시적으로 요청한 경우
-        if (this.config.autoCreatePR || params.createPR) {
-            // 한국 시간 기준 오늘 날짜
-            const now = new Date();
-            const kstOffset = 9 * 60; // KST는 UTC+9
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const kstTime = new Date(utcTime + (kstOffset * 60000));
-            const today = kstTime.toISOString().split('T')[0];
-            const result = await this.githubManager.createDailyPR(today);
-            prMessage = result.success
-                ? `\nPull request created: ${result.prUrl}`
-                : `\nFailed to create PR: ${result.message}`;
-            // 자동 병합이 활성화되어 있고 PR 생성이 성공한 경우
-            if (this.config.autoMergePR && result.success && result.prNumber) {
-                const mergeResult = await this.githubManager.mergePullRequest(result.prNumber, this.config.prMergeMethod || 'merge');
-                prMessage += mergeResult.success
-                    ? `\nPR automatically merged!`
-                    : `\nFailed to auto-merge: ${mergeResult.message}`;
-            }
+        // 3. 저장 결과 반환
+        let message = `✅ 작업일지가 저장되었습니다:\n📁 ${filePath}`;
+        if (yesterdaySummaryPath) {
+            message += `\n\n📊 어제의 요약도 생성되었습니다:\n📁 ${yesterdaySummaryPath}`;
         }
+        message += `\n\n💡 Git 작업이 필요한 경우 GitHub MCP를 사용하여 다음 작업을 수행하세요:\n`;
+        message += `1. git pull (최신 상태 동기화)\n`;
+        message += `2. git add . (변경사항 스테이징)\n`;
+        message += `3. git commit -m "docs: ${this.config.gitBranch} 작업일지 추가"\n`;
+        message += `4. git push (원격 저장소에 푸시)\n`;
+        message += `5. PR 생성 (필요시)`;
         return {
             content: [
                 {
                     type: 'text',
-                    text: `Conversation saved to ${filePath} and pushed to repository${prMessage}`
+                    text: message
                 }
             ]
         };
@@ -327,27 +210,11 @@ class WorkLogMCPServer {
         const params = CreateDailySummarySchema.parse(args);
         const summary = await this.summaryGenerator.createSummary(params.date, params.project);
         const summaryPath = await this.fileManager.saveSummary(summary.date, summary.content, params.project);
-        await this.gitManager.addCommitPush(summaryPath, `Add daily summary for ${summary.date}`);
         return {
             content: [
                 {
                     type: 'text',
-                    text: `Daily summary created and saved to ${summaryPath}`
-                }
-            ]
-        };
-    }
-    async handleSyncRepository() {
-        await this.gitManager.pull();
-        const status = await this.gitManager.getStatus();
-        if (status.hasChanges) {
-            await this.gitManager.pushAll('Sync repository changes');
-        }
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: 'Repository synchronized successfully'
+                    text: `📊 일일 요약이 생성되었습니다:\n📁 ${summaryPath}\n\n💡 Git 작업이 필요한 경우 GitHub MCP를 사용하세요.`
                 }
             ]
         };
@@ -355,23 +222,37 @@ class WorkLogMCPServer {
     async handleListLogs(args) {
         const params = ListLogsSchema.parse(args);
         const logs = await this.fileManager.listLogs(params.branch, params.project, params.date);
+        if (logs.length === 0) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: '📭 저장된 작업일지가 없습니다.'
+                    }
+                ]
+            };
+        }
+        const logList = logs.map(log => `📄 ${log.date} | ${log.branch} | ${log.fileName}`).join('\n');
         return {
             content: [
                 {
                     type: 'text',
-                    text: JSON.stringify(logs, null, 2)
+                    text: `📚 작업일지 목록:\n${logList}`
                 }
             ]
         };
     }
-    async handleGetLastSummary() {
-        const summary = await this.fileManager.getLastSummary(this.config.defaultProject);
+    async handleGetLastSummary(args) {
+        const params = z.object({
+            project: z.string().optional()
+        }).parse(args);
+        const summary = await this.fileManager.getLastSummary(params.project);
         if (!summary) {
             return {
                 content: [
                     {
                         type: 'text',
-                        text: 'No summaries found'
+                        text: '📭 저장된 요약이 없습니다.'
                     }
                 ]
             };
@@ -385,77 +266,10 @@ class WorkLogMCPServer {
             ]
         };
     }
-    async handleCreatePR(args) {
-        const params = CreatePRSchema.parse(args);
-        const result = await this.githubManager.createPullRequest(params.title, params.body, params.sourceBranch, params.targetBranch);
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: result.success
-                        ? `✅ ${result.message}\nPR URL: ${result.prUrl}`
-                        : `❌ ${result.message}`
-                }
-            ]
-        };
-    }
-    async handleCreateDailyPR(args) {
-        const params = z.object({
-            date: z.string().optional()
-        }).parse(args);
-        const result = await this.githubManager.createDailyPR(params.date);
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: result.success
-                        ? `✅ ${result.message}\nPR URL: ${result.prUrl}`
-                        : `❌ ${result.message}`
-                }
-            ]
-        };
-    }
-    async handleListPRs(args) {
-        const params = ListPRsSchema.parse(args);
-        const prs = await this.githubManager.listPullRequests(params.state || 'open');
-        if (prs.length === 0) {
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: 'No pull requests found'
-                    }
-                ]
-            };
-        }
-        const prList = prs.map(pr => `#${pr.number}: ${pr.title}\n  State: ${pr.state}\n  Branch: ${pr.head} → ${pr.base}\n  URL: ${pr.url}`).join('\n\n');
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: prList
-                }
-            ]
-        };
-    }
-    async handleMergePR(args) {
-        const params = MergePRSchema.parse(args);
-        const result = await this.githubManager.mergePullRequest(params.prNumber, params.mergeMethod || 'merge');
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: result.success
-                        ? `✅ ${result.message}`
-                        : `❌ ${result.message}`
-                }
-            ]
-        };
-    }
     async run() {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
-        console.error('auto_worklog-mcp server running on stdio');
+        console.error('auto_worklog-mcp server v2.0.0 running (file management only)');
     }
 }
 const server = new WorkLogMCPServer();

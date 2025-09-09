@@ -219,6 +219,11 @@ repository/
 
 ### 선택 환경 변수
 - `USE_DAILY_NOTE`: Auto worklog를 활성화할 Claude 프로젝트 목록 (쉼표 구분)
+  - 예: `"글리터 홈페이지,publishing.gltr-ous.us,text2cuts"`
+  - 이 목록에 있는 프로젝트에서만 worklog가 저장됨
+  - 비어있으면 모든 프로젝트에서 활성화
+  - 목록에 없는 프로젝트에서 시도하면 경고 메시지 표시
+- `DEFAULT_PROJECT`: project 파라미터가 없을 때 사용할 기본 프로젝트
 - `AUTO_CREATE_PR`: 자동 PR 생성 (`true`/`false`)
 - `AUTO_MERGE_PR`: 자동 PR 병합 (`true`/`false`)
 - `PR_TARGET_BRANCH`: PR 대상 브랜치 (기본값: `main`)

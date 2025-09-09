@@ -289,18 +289,28 @@ class WorkLogMCPServer {
     
     // Check if logging is enabled for this Claude project
     if (this.config.enabledProjects && this.config.enabledProjects.length > 0) {
-      // Claude가 project 파라미터로 현재 프로젝트 이름을 전달할 것임
-      const currentProject = params.project;
-      if (currentProject && !this.config.enabledProjects.includes(currentProject)) {
+      // project 파라미터가 없으면 기본 프로젝트 사용
+      if (!params.project) {
+        params.project = this.config.defaultProject || 'default';
+      }
+      
+      // 프로젝트가 활성화 목록에 있는지 확인
+      if (!this.config.enabledProjects.includes(params.project)) {
+        // 활성화되지 않은 프로젝트는 저장하지 않음
         return {
           content: [
             {
-              type: 'text',
-              text: `이 프로젝트는 worklog 저장이 비활성화되어 있습니다: ${currentProject}\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}`
+              type: 'text', 
+              text: `⚠️ 프로젝트 '${params.project}'는 worklog 저장이 비활성화되어 있습니다.\n\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}\n\n이 프로젝트를 활성화하려면 설정에서 USE_DAILY_NOTE에 추가하세요.`
             }
           ]
         };
       }
+    }
+    
+    // 프로젝트가 없으면 기본값 설정
+    if (!params.project) {
+      params.project = this.config.defaultProject || 'default';
     }
     
     await this.gitManager.pull();

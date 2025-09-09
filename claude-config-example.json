@@ -1,17 +1,40 @@
 {
-    "mcpServers": {
-        "auto_worklog": {
-            "command": "node",
-            "args": ["/home/apic/python/workLog/auto_worklog-mcp/dist/index.js"],
-            "env": {
-                "GIT_REPO_PATH": "/home/apic/python/workLog",
-                "GIT_BRANCH": "main",
-                "GIT_USER_NAME": "Your Name",
-                "GIT_USER_EMAIL": "your.email@example.com",
-                "GIT_ACCESS_TOKEN": "ghp_YOUR_PERSONAL_ACCESS_TOKEN",
-                "WORK_BRANCH": "feature/my-work",
-                "DEFAULT_PROJECT": "my-project"
-            }
-        }
+  "mcpServers": {
+    "worklog_글리터홈페이지": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "글리터 홈페이지"
+      }
+    },
+    "worklog_publishing": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "publishing.gltr-ous.us"
+      }
+    },
+    "worklog_text2cuts": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "text2cuts"
+      }
+    },
+    "worklog_auto_worklog": {
+      "command": "node",
+      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
+      "env": {
+        "WORKLOG_PATH": "/home/apic/python/worklog",
+        "WORK_BRANCH": "Inyoung",
+        "PROJECT_NAME": "auto_worklog-mcp"
+      }
     }
+  }
 }

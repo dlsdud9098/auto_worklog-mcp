@@ -82,12 +82,14 @@ export class FileManager {
         await fs.mkdir(dirPath, { recursive: true });
         const paddedNumber = String(fileNumber).padStart(3, '0');
         const sanitizedSummary = summary.replace(/[^a-zA-Z0-9가-힣\s_]/g, '').substring(0, 50);
-        const fileName = `${paddedNumber}-${sanitizedSummary}.md`;
+        const projectPrefix = project ? `[${project}]` : '';
+        const fileName = `${paddedNumber}-${projectPrefix}${sanitizedSummary}.md`;
         const filePath = path.join(dirPath, fileName);
         const fileContent = `# ${summary}
 
 Date: ${today}
 Branch: ${branch}
+Project: ${project || 'default'}
 Log Number: ${paddedNumber}
 
 ---

@@ -152,11 +152,18 @@ class WorkLogMCPServer {
     }
     async handleSaveConversation(args) {
         const params = SaveConversationSchema.parse(args);
-        // Check if logging is enabled for this Claude project
+        // USE_DAILY_NOTE가 설정되어 있으면 해당 프로젝트만 허용
         if (this.config.enabledProjects && this.config.enabledProjects.length > 0) {
-            // project 파라미터가 없으면 기본 프로젝트 사용
+            // 프로젝트가 지정되지 않으면 저장하지 않음
             if (!params.project) {
-                params.project = this.config.defaultProject || 'default';
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `⚠️ 프로젝트가 지정되지 않았습니다.\n\n활성화된 프로젝트: ${this.config.enabledProjects.join(', ')}\n\n위 프로젝트 중 하나를 project 파라미터로 지정하세요.`
+                        }
+                    ]
+                };
             }
             // 프로젝트가 활성화 목록에 있는지 확인
             if (!this.config.enabledProjects.includes(params.project)) {
@@ -171,9 +178,9 @@ class WorkLogMCPServer {
                 };
             }
         }
-        // 프로젝트가 없으면 기본값 설정
+        // USE_DAILY_NOTE가 없으면 모든 프로젝트 허용 (project 없으면 'default' 사용)
         if (!params.project) {
-            params.project = this.config.defaultProject || 'default';
+            params.project = 'default';
         }
         // 1. 오늘 첫 파일이면 어제 요약 먼저 생성
         const isFirstFileToday = await this.fileManager.isFirstFileOfDay(params.project);
@@ -246,7 +253,12 @@ class WorkLogMCPServer {
         const params = z.object({
             project: z.string().optional()
         }).parse(args);
-        const summary = await this.fileManager.getLastSummary(params.project);
+        // USE_DAILY_NOTE가 설정되어 있고 프로젝트가 지정되지 않으면 첫 번째 프로젝트 사용
+        let targetProject = params.project;
+        if (!targetProject && this.config.enabledProjects && this.config.enabledProjects.length > 0) {
+            targetProject = this.config.enabledProjects[0];
+        }
+        const summary = await this.fileManager.getLastSummary(targetProject);
         if (!summary) {
             return {
                 content: [

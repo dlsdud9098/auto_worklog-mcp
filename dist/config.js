@@ -19,7 +19,6 @@ export const config = {
         workLogBase: workLogPath,
         summariesBase: path.join(workLogPath, '요약')
     },
-    defaultProject: process.env.DEFAULT_PROJECT,
     enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined
 };
 // 필수 디렉토리 생성

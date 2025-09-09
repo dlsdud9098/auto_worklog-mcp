@@ -4,7 +4,6 @@ export interface Config {
         workLogBase: string;
         summariesBase: string;
     };
-    defaultProject?: string;
     enabledProjects?: string[];
 }
 export declare const config: Config;

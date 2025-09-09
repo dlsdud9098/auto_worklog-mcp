@@ -10,7 +10,6 @@ export interface Config {
     workLogBase: string;  // 일지 저장 기본 경로
     summariesBase: string;  // 요약 저장 경로
   };
-  defaultProject?: string;  // 기본 프로젝트명
   enabledProjects?: string[];  // 활성화된 프로젝트 목록
 }
 
@@ -34,7 +33,6 @@ export const config: Config = {
     workLogBase: workLogPath,
     summariesBase: path.join(workLogPath, '요약')
   },
-  defaultProject: process.env.DEFAULT_PROJECT,
   enabledProjects: process.env.USE_DAILY_NOTE ? process.env.USE_DAILY_NOTE.split(',').map(p => p.trim()) : undefined
 };
 

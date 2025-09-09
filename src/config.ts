@@ -11,6 +11,8 @@ export interface Config {
     workLogBase: string;  // 일지 저장 기본 경로
     summariesBase: string;  // 요약 저장 경로
   };
+  autoGitSync?: boolean;  // Git 자동 동기화 여부
+  gitAccessToken?: string;  // GitHub 액세스 토큰
 }
 
 function ensureEnvVar(name: string, defaultValue?: string): string {
@@ -36,7 +38,9 @@ export const config: Config = {
   paths: {
     workLogBase: workLogPath,
     summariesBase: path.join(workLogPath, '요약')
-  }
+  },
+  autoGitSync: process.env.AUTO_GIT_SYNC === 'true',
+  gitAccessToken: process.env.GIT_ACCESS_TOKEN
 };
 
 // 필수 디렉토리 생성

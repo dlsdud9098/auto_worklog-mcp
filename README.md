@@ -47,7 +47,9 @@ Claude Desktop의 설정 파일에 프로젝트별 MCP 서버 추가:
       "env": {
         "WORKLOG_PATH": "/home/apic/python/worklog",
         "WORK_BRANCH": "Inyoung",
-        "PROJECT_NAME": "글리터 홈페이지"
+        "PROJECT_NAME": "글리터 홈페이지",
+        "AUTO_GIT_SYNC": "true",
+        "GIT_ACCESS_TOKEN": "ghp_YOUR_TOKEN_HERE"
       }
     },
     "worklog_pub": {
@@ -84,6 +86,10 @@ Claude Desktop의 설정 파일에 프로젝트별 MCP 서버 추가:
 - `WORKLOG_PATH`: 작업일지 저장 경로 (기본값: `/home/apic/python/worklog`)
 - `WORK_BRANCH`: 작업 브랜치명 (기본값: `Inyoung`)
 - `PROJECT_NAME`: 프로젝트 이름 (필수, 파일명에 표시됨)
+
+### 선택 환경 변수 (Git 자동화)
+- `AUTO_GIT_SYNC`: Git 자동 동기화 활성화 (`true`/`false`)
+- `GIT_ACCESS_TOKEN`: GitHub Personal Access Token (PR 생성용)
 
 ## 📁 폴더 구조
 
@@ -225,12 +231,17 @@ date: "2025-01-15"  # 선택사항
 
 ## 🔄 Git 작업 연동
 
-이 MCP는 파일 관리만 담당합니다. Git 작업은 별도의 GitHub MCP를 사용하여 수행하세요:
+### 자동 모드 (AUTO_GIT_SYNC=true)
+작업일지 저장 시 자동으로 Git 작업 수행:
+1. Git pull
+2. Git add
+3. Git commit
+4. Git push
+5. PR 생성 (GIT_ACCESS_TOKEN 설정 시)
 
+### 수동 모드 (AUTO_GIT_SYNC=false 또는 미설정)
+GitHub MCP를 사용하여 수동으로 Git 작업 수행:
 1. **작업일지 저장** (auto_worklog-mcp)
-   - 각 프로젝트별로 작업일지 저장
-   - 파일명에 프로젝트명 자동 포함
-
 2. **Git 작업** (github-mcp)
    - `git pull` - 최신 상태 동기화
    - `git add .` - 변경사항 스테이징
@@ -296,6 +307,7 @@ date: "2025-01-15"  # 선택사항
 
 ## 📌 버전 정보
 
+- **v3.2.0**: Git 자동 동기화 기능 추가 (AUTO_GIT_SYNC)
 - **v3.1.0**: 프로젝트별 폴더 분리 제거, 파일명으로 구분
 - **v3.0.0**: 프로젝트별 MCP 인스턴스 방식
 - **v2.0.0**: Git 기능 분리, 파일 관리 전용

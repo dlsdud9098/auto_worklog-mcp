@@ -21,7 +21,9 @@ export const config = {
     paths: {
         workLogBase: workLogPath,
         summariesBase: path.join(workLogPath, '요약')
-    }
+    },
+    autoGitSync: process.env.AUTO_GIT_SYNC === 'true',
+    gitAccessToken: process.env.GIT_ACCESS_TOKEN
 };
 // 필수 디렉토리 생성
 const devLogPath = path.join(config.paths.workLogBase, '개발일지');

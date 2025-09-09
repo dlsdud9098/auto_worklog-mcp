@@ -10,6 +10,7 @@ import {
 import { z } from 'zod';
 import { FileManager } from './file-manager.js';
 import { SummaryGenerator } from './summary-generator.js';
+import { GitSync } from './git-sync.js';
 import { config, Config } from './config.js';
 
 const SaveConversationSchema = z.object({
@@ -30,13 +31,14 @@ class WorkLogMCPServer {
   private server: Server;
   private fileManager: FileManager;
   private summaryGenerator: SummaryGenerator;
+  private gitSync: GitSync;
   private config: Config;
 
   constructor() {
     this.server = new Server(
       {
         name: 'auto_worklog-mcp',
-        version: '2.0.0',
+        version: '3.2.0',
       },
       {
         capabilities: {
@@ -48,6 +50,7 @@ class WorkLogMCPServer {
     this.config = config;
     this.fileManager = new FileManager(config);
     this.summaryGenerator = new SummaryGenerator(config);
+    this.gitSync = new GitSync(config);
     
     this.setupHandlers();
     this.setupErrorHandling();
@@ -191,12 +194,29 @@ class WorkLogMCPServer {
       message += `\n\n📊 어제의 요약도 생성되었습니다:\n📁 ${yesterdaySummaryPath}`;
     }
     
-    message += `\n\n💡 Git 작업이 필요한 경우 GitHub MCP를 사용하여 다음 작업을 수행하세요:\n`;
-    message += `1. git pull (최신 상태 동기화)\n`;
-    message += `2. git add . (변경사항 스테이징)\n`;
-    message += `3. git commit -m "docs: ${this.config.gitBranch} 작업일지 추가"\n`;
-    message += `4. git push (원격 저장소에 푸시)\n`;
-    message += `5. PR 생성 (필요시)`;
+    // Git 자동 동기화
+    if (this.config.autoGitSync) {
+      message += `\n\n🔄 Git 동기화 진행 중...`;
+      const gitResult = await this.gitSync.syncRepository();
+      
+      if (gitResult.success) {
+        message += `\n✅ ${gitResult.message}`;
+      } else {
+        message += `\n⚠️ ${gitResult.message}`;
+        message += `\n\n수동으로 Git 작업을 수행하세요:`;
+        message += `\n1. git pull origin main`;
+        message += `\n2. git add .`;
+        message += `\n3. git commit -m "docs: [${this.config.projectName}] 작업일지 추가"`;
+        message += `\n4. git push origin main`;
+      }
+    } else {
+      message += `\n\n💡 Git 작업이 필요한 경우 GitHub MCP를 사용하여 다음 작업을 수행하세요:\n`;
+      message += `1. git pull (최신 상태 동기화)\n`;
+      message += `2. git add . (변경사항 스테이징)\n`;
+      message += `3. git commit -m "docs: [${this.config.projectName}] 작업일지 추가"\n`;
+      message += `4. git push (원격 저장소에 푸시)\n`;
+      message += `5. PR 생성 (필요시)`;
+    }
     
     return {
       content: [

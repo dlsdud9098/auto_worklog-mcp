@@ -196,21 +196,24 @@ class WorkLogMCPServer {
     if (this.config.autoGitSync) {
       message += `\n\n🔄 Git 자동 동기화가 활성화되어 있습니다.`;
       message += `\n\n💡 GitHub MCP를 사용하여 다음 명령을 실행해주세요:`;
-      message += `\n\n**1. 브랜치 전환/생성:**`;
+      message += `\n\n**1. 최신 변경사항 가져오기:**`;
+      message += `\n/use github pull`;
+      message += `\n\n**2. 브랜치 전환/생성:**`;
       message += `\n/use github checkout -b ${this.config.gitBranch}`;
-      message += `\n\n**2. 변경사항 커밋 및 푸시:**`;
+      message += `\n\n**3. 변경사항 커밋 및 푸시:**`;
       message += `\n/use github add .`;
       message += `\n/use github commit -m "docs: [${this.config.gitBranch}] 작업일지 추가"`;
       message += `\n/use github push -u origin ${this.config.gitBranch}`;
-      message += `\n\n**3. PR 생성:**`;
+      message += `\n\n**4. PR 생성:**`;
       message += `\n/use github pr create --title "[${this.config.gitBranch}] ${new Date().toISOString().split('T')[0]} 작업일지" --body "작업일지 PR\n\n브랜치: ${this.config.gitBranch}\n경로: ${this.config.paths.workLogBase}"`;
     } else {
       message += `\n\n💡 GitHub MCP를 사용하여 Git 작업을 수행할 수 있습니다:`;
       message += `\n\n**브랜치 작업:**`;
-      message += `\n1. /use github checkout -b ${this.config.gitBranch} (브랜치 생성/전환)`;
-      message += `\n2. /use github add . (변경사항 스테이징)`;
-      message += `\n3. /use github commit -m "docs: [${this.config.gitBranch}] 작업일지 추가"`;
-      message += `\n4. /use github push -u origin ${this.config.gitBranch} (브랜치 푸시)`;
+      message += `\n1. /use github pull (최신 변경사항 가져오기)`;
+      message += `\n2. /use github checkout -b ${this.config.gitBranch} (브랜치 생성/전환)`;
+      message += `\n3. /use github add . (변경사항 스테이징)`;
+      message += `\n4. /use github commit -m "docs: [${this.config.gitBranch}] 작업일지 추가"`;
+      message += `\n5. /use github push -u origin ${this.config.gitBranch} (브랜치 푸시)`;
       message += `\n\n**PR 생성:**`;
       message += `\n/use github pr create --title "[${this.config.gitBranch}] 작업일지" --body "작업일지 PR"`;
     }

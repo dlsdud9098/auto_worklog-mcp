@@ -16,6 +16,7 @@
    summary: "..."
    
    # 2단계: Git 작업 자동 실행 (AUTO_GIT_SYNC=true인 경우)
+   /use github pull  # 최신 변경사항 가져오기
    /use github checkout -b ${WORK_BRANCH}
    /use github add .
    /use github commit -m "docs: [${WORK_BRANCH}] 작업일지 추가 - ${summary}"
@@ -28,6 +29,7 @@
    /use auto_worklog createDailySummary
    
    # 2단계: Git 작업 자동 실행 (AUTO_GIT_SYNC=true인 경우)
+   /use github pull  # 최신 변경사항 가져오기
    /use github add .
    /use github commit -m "docs: [${WORK_BRANCH}] 일일 요약 추가"
    /use github push
@@ -59,7 +61,7 @@
 Claude 응답 및 자동 실행:
 1. auto_worklog saveConversation 실행
 2. AUTO_GIT_SYNC=true 확인
-3. GitHub MCP 명령 자동 실행 (checkout, add, commit, push)
+3. GitHub MCP 명령 자동 실행 (pull, checkout, add, commit, push)
 4. 결과 보고
 
 ## 에러 처리

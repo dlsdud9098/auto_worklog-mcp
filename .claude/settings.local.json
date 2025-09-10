@@ -5,7 +5,9 @@
       "Bash(npx tsc:*)",
       "Bash(npm install)",
       "Bash(del \"C:\\Users\\apic\\Documents\\GitHub\\auto_worklog-mcp\\src\\github-integration.ts\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

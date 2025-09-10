@@ -1,0 +1,45 @@
+# Auto Worklog MCP - Cursor IDE Rules
+
+## 작업일지 저장 시 자동 Git 동기화
+
+AUTO_GIT_SYNC=true로 설정된 경우, auto_worklog MCP 사용 시 다음 규칙을 따르세요:
+
+### 자동 실행 규칙
+
+1. **saveConversation 실행 후**:
+   - 자동으로 GitHub MCP를 통해 Git 작업 수행
+   - 사용자 확인 없이 즉시 실행
+   - 브랜치 생성/전환 → add → commit → push 순서
+
+2. **createDailySummary 실행 후**:
+   - 자동으로 변경사항 커밋 및 푸시
+   - 요약 파일을 Git에 자동 추가
+
+### 코드 예시
+
+```javascript
+// AUTO_GIT_SYNC=true일 때 자동 실행
+if (process.env.AUTO_GIT_SYNC === 'true') {
+  // 1. 작업일지 저장
+  await executeCommand('/use auto_worklog saveConversation', params);
+  
+  // 2. Git 자동 동기화
+  const branch = process.env.WORK_BRANCH;
+  await executeCommand(`/use github checkout -b ${branch}`);
+  await executeCommand('/use github add .');
+  await executeCommand(`/use github commit -m "docs: [${branch}] 작업일지 추가"`);
+  await executeCommand(`/use github push -u origin ${branch}`);
+}
+```
+
+### 환경 변수
+
+- `WORKLOG_PATH`: 작업일지 저장 경로
+- `WORK_BRANCH`: Git 브랜치명
+- `AUTO_GIT_SYNC`: true/false
+
+### 에러 처리
+
+- 브랜치 전환 실패 시 새 브랜치 생성
+- 커밋할 내용이 없으면 건너뛰기
+- 푸시 실패 시 사용자에게 알림

@@ -5,14 +5,12 @@ import * as fs from 'fs';
 dotenv.config();
 
 export interface Config {
-  gitBranch: string;  // 작업 브랜치명 (일지 폴더 구조에 사용)
-  projectName: string;  // 프로젝트 이름
+  gitBranch: string;  // 작업 브랜치명 (일지 폴더 구조 및 Git 브랜치에 사용)
   paths: {
     workLogBase: string;  // 일지 저장 기본 경로
     summariesBase: string;  // 요약 저장 경로
   };
   autoGitSync?: boolean;  // Git 자동 동기화 여부
-  gitAccessToken?: string;  // GitHub 액세스 토큰
 }
 
 function ensureEnvVar(name: string, defaultValue?: string): string {
@@ -26,21 +24,16 @@ function ensureEnvVar(name: string, defaultValue?: string): string {
 // 작업일지 저장 경로 (필수)
 const workLogPath = ensureEnvVar('WORKLOG_PATH', '/home/apic/python/worklog');
 
-// 작업 브랜치명 (필수)
-const workBranch = ensureEnvVar('WORK_BRANCH', 'Inyoung');
-
-// 프로젝트 이름 (필수)
-const projectName = ensureEnvVar('PROJECT_NAME');
+// 작업 브랜치명 (필수) - 폴더명과 Git 브랜치명으로 사용
+const workBranch = ensureEnvVar('WORK_BRANCH', 'main');
 
 export const config: Config = {
   gitBranch: workBranch,
-  projectName: projectName,
   paths: {
     workLogBase: workLogPath,
     summariesBase: path.join(workLogPath, '요약')
   },
-  autoGitSync: process.env.AUTO_GIT_SYNC === 'true',
-  gitAccessToken: process.env.GIT_ACCESS_TOKEN
+  autoGitSync: process.env.AUTO_GIT_SYNC === 'true'
 };
 
 // 필수 디렉토리 생성

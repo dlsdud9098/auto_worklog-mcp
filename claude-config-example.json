@@ -1,46 +1,12 @@
 {
   "mcpServers": {
-    "worklog_글리터": {
+    "auto_worklog": {
       "command": "node",
       "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
       "env": {
         "WORKLOG_PATH": "/home/apic/python/worklog",
-        "WORK_BRANCH": "Inyoung",
-        "PROJECT_NAME": "글리터 홈페이지",
-        "AUTO_GIT_SYNC": "true",
-        "GIT_ACCESS_TOKEN": "ghp_YOUR_GITHUB_TOKEN_HERE"
-      }
-    },
-    "worklog_publishing": {
-      "command": "node",
-      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
-      "env": {
-        "WORKLOG_PATH": "/home/apic/python/worklog",
-        "WORK_BRANCH": "Inyoung",
-        "PROJECT_NAME": "publishing.gltr-ous.us",
-        "AUTO_GIT_SYNC": "true",
-        "GIT_ACCESS_TOKEN": "ghp_YOUR_GITHUB_TOKEN_HERE"
-      }
-    },
-    "worklog_text2cuts": {
-      "command": "node",
-      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
-      "env": {
-        "WORKLOG_PATH": "/home/apic/python/worklog",
-        "WORK_BRANCH": "Inyoung",
-        "PROJECT_NAME": "text2cuts",
-        "AUTO_GIT_SYNC": "true",
-        "GIT_ACCESS_TOKEN": "ghp_YOUR_GITHUB_TOKEN_HERE"
-      }
-    },
-    "worklog_videostt": {
-      "command": "node",
-      "args": ["/home/apic/python/auto_worklog-mcp/dist/index.js"],
-      "env": {
-        "WORKLOG_PATH": "/home/apic/python/worklog",
-        "WORK_BRANCH": "Inyoung",
-        "PROJECT_NAME": "videostt",
-        "AUTO_GIT_SYNC": "false"
+        "WORK_BRANCH": "feature/my-work",
+        "AUTO_GIT_SYNC": "true"
       }
     }
   }

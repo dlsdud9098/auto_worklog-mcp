@@ -11,19 +11,15 @@ function ensureEnvVar(name, defaultValue) {
 }
 // 작업일지 저장 경로 (필수)
 const workLogPath = ensureEnvVar('WORKLOG_PATH', '/home/apic/python/worklog');
-// 작업 브랜치명 (필수)
-const workBranch = ensureEnvVar('WORK_BRANCH', 'Inyoung');
-// 프로젝트 이름 (필수)
-const projectName = ensureEnvVar('PROJECT_NAME');
+// 작업 브랜치명 (필수) - 폴더명과 Git 브랜치명으로 사용
+const workBranch = ensureEnvVar('WORK_BRANCH', 'main');
 export const config = {
     gitBranch: workBranch,
-    projectName: projectName,
     paths: {
         workLogBase: workLogPath,
         summariesBase: path.join(workLogPath, '요약')
     },
-    autoGitSync: process.env.AUTO_GIT_SYNC === 'true',
-    gitAccessToken: process.env.GIT_ACCESS_TOKEN
+    autoGitSync: process.env.AUTO_GIT_SYNC === 'true'
 };
 // 필수 디렉토리 생성
 const devLogPath = path.join(config.paths.workLogBase, '개발일지');

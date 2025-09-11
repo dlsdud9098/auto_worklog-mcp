@@ -1,0 +1,60 @@
+# 작업일지 작성 가이드
+
+## 작업일지 저장 명령어
+/use auto_worklog saveConversation
+content: "[작업 내용]"
+summary: "[간단한 요약]"
+
+## 작업 내용 작성 방법
+
+### 1. 구조화된 형식으로 작성
+- 작업 항목별로 명확히 구분
+- 시간 순서대로 기록
+- 코드 변경사항은 구체적으로 명시
+
+### 2. 작성 예시
+```
+오늘 작업 내용:
+
+1. GitHub 통합 기능 구현
+   - github-integration.ts 파일 생성
+   - Git 명령어 실행 함수 추가 (pull, checkout, add, commit, push)
+   - 에러 처리 로직 구현
+
+2. 자동 동기화 기능 추가
+   - AUTO_GIT_SYNC 환경변수 체크 로직
+   - 작업일지 저장 후 자동 Git 동기화
+   - 브랜치 자동 생성 및 전환
+
+3. 버그 수정
+   - 파일 경로 오류 수정
+   - 권한 문제 해결
+```
+
+### 3. 요약 작성 방법
+- 한 줄로 핵심 내용 요약
+- 예: "GitHub 통합 및 자동 동기화 기능 구현"
+
+## 일일 요약 생성
+/use auto_worklog createDailySummary
+
+## Git 자동 동기화 (AUTO_GIT_SYNC=true인 경우)
+작업일지 저장 시 자동으로 실행됨:
+1. git pull (최신 변경사항 가져오기)
+2. git checkout -b [브랜치명]
+3. git add .
+4. git commit -m "docs: 작업일지 추가"
+5. git push -u origin [브랜치명]
+
+## 환경 변수 설정
+- WORKLOG_PATH: 작업일지 저장 경로
+- WORK_BRANCH: Git 브랜치명
+- AUTO_GIT_SYNC: true/false (자동 동기화 여부)
+
+## 작업일지 포함 내용
+1. 구현한 기능
+2. 수정한 버그
+3. 생성/수정한 파일
+4. 사용한 기술/도구
+5. 발생한 문제와 해결 방법
+6. 다음 작업 계획 (선택사항)

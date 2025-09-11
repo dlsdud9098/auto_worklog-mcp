@@ -7,7 +7,9 @@
       "Bash(del \"C:\\Users\\apic\\Documents\\GitHub\\auto_worklog-mcp\\src\\github-integration.ts\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm run dev:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []

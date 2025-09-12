@@ -40,11 +40,27 @@ export class GitHubIntegration {
             results.push(`🚀 Pushing to origin/${branch}...`);
             await execAsync(`git push -u origin ${branch}`);
             results.push('✅ Push completed');
-            // 6. Create PR message
+            // 6. Create PR
+            results.push('\n🔀 Creating Pull Request...');
             const prTitle = `[${branch}] ${new Date().toISOString().split('T')[0]} 작업일지`;
-            const prBody = `작업일지 PR\\n\\n브랜치: ${branch}\\n경로: ${this.config.paths.workLogBase}`;
-            results.push('\n📋 PR 생성을 위해 다음 명령을 실행하세요:');
-            results.push(`gh pr create --title "${prTitle}" --body "${prBody}" --base main`);
+            const prBody = `작업일지 PR\n\n브랜치: ${branch}\n경로: ${this.config.paths.workLogBase}`;
+            try {
+                const { stdout } = await execAsync(`gh pr create --title "${prTitle}" --body "${prBody}" --base main`);
+                results.push('✅ PR created successfully!');
+                results.push(`📌 PR URL: ${stdout.trim()}`);
+            }
+            catch (prError) {
+                // PR 생성 실패 시 (이미 PR이 있거나 gh CLI가 없는 경우)
+                const prErrorMessage = prError instanceof Error ? prError.message : String(prError);
+                if (prErrorMessage.includes('already exists')) {
+                    results.push('ℹ️ PR already exists for this branch');
+                }
+                else {
+                    results.push(`⚠️ Could not create PR automatically: ${prErrorMessage}`);
+                    results.push('\n💡 PR을 수동으로 생성하려면:');
+                    results.push(`gh pr create --title "${prTitle}" --body "${prBody}" --base main`);
+                }
+            }
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

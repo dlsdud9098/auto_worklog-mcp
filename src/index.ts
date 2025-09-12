@@ -313,7 +313,7 @@ class WorkLogMCPServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('auto_worklog-mcp server v3.4.0 running (with GitHub integration)');
+    console.error('auto_worklog-mcp server v3.5.0 running (with automatic PR creation)');
   }
 }
 

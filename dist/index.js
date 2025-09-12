@@ -161,7 +161,7 @@ class WorkLogMCPServer {
             message += gitResults.join('\n');
         }
         else {
-            message += `\n\n💡 GitHub MCP를 사용하여 Git 작업을 수행할 수 있습니다:`;
+            message += `\n\n💡 Git 작업이 필요한 경우 수동으로 다음 명령을 실행하세요:`;
             message += `\n\n**브랜치 작업:**`;
             message += `\n1. git pull origin main (최신 변경사항 가져오기)`;
             message += `\n2. git checkout -b ${this.config.gitBranch} (브랜치 생성/전환)`;
@@ -196,7 +196,7 @@ class WorkLogMCPServer {
                             msg += gitResults.join('\n');
                             return msg;
                         })()
-                        : `📊 일일 요약이 생성되었습니다:\n📁 ${summaryPath}\n\n💡 Git 작업이 필요한 경우 GitHub CLI를 사용하세요.`
+                        : `📊 일일 요약이 생성되었습니다:\n📁 ${summaryPath}\n\n💡 Git 작업이 필요한 경우 수동으로 git 명령을 실행하세요.`
                 }
             ]
         };

@@ -11,7 +11,8 @@
       "Bash(npm run dev:*)",
       "Bash(claude mcp:*)",
       "Bash(touch:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "mcp__auto_worklog__saveConversation"
     ],
     "deny": [],
     "ask": []
